@@ -1,106 +1,230 @@
-# AI Image Guardian
+# 🛡️ AI Image Guardian
 
-Full‑stack AI-powered image guardian that scans user uploads for unsafe content (nudity, violence, weapons, etc.), automatically flags risky images, and shields viewers with a blur + warning UI.
+**AI Image Guardian** is a full-stack, AI-powered image moderation platform that scans user-uploaded images for unsafe content such as nudity, violence, and weapons. Risky images are automatically flagged and visually shielded using a blur + warning interface to protect viewers.
 
-## Features
+The system is privacy-first, user-centric, and designed to demonstrate real-world AI moderation workflows.
 
-- **AI moderation pipeline** – images are uploaded, analyzed by Sightengine, and stored with safety verdict and tags.
-- **Privacy‑aware gallery** – unsafe images are blurred by default with a content warning overlay and “view anyway” toggle.
-- **User dashboard** – simple upload flow with instant feedback and a personal gallery of all scanned images.
-- **Profile & stats** – per‑user summary of total photos scanned, safe vs flagged counts.
-- **JWT authentication** – register, login, and protect all image endpoints behind auth.
+---
 
-## Tech Stack
+## ✨ Key Features
 
-- **Frontend**: React (Vite), React Router, Axios
-- **Backend**: Django, Django REST Framework, SimpleJWT
-- **AI Moderation**: Sightengine Image Moderation API
-- **Database**: SQLite (dev/demo), easily swappable for Postgres
-- **Styling**: Custom CSS (glassmorphism, white/blue futuristic theme)
+### 🔍 AI Moderation Pipeline
 
-## Architecture Overview
+* Images are uploaded and analyzed using the **Sightengine Image Moderation API**
+* Each image is stored with:
 
-1. User authenticates via JWT.
-2. Authenticated user uploads an image from the dashboard.
-3. Django saves the file, then calls Sightengine’s `/check.json` endpoint.
-4. Response is interpreted into:
-   - `is_safe` (bool)
-   - `confidence_score` (max unsafe score)
-   - `ai_tags` (reasons like “Nudity (explicit 84%)” or “Weapon”).
-5. Gallery and profile pages read from the API and render a privacy‑first UI.
+  * Safety verdict (`is_safe`)
+  * Confidence score (highest unsafe probability)
+  * AI tags (e.g., *Nudity – explicit 84%*, *Weapon*)
 
-## Project Structure
+### 🖼️ Privacy-Aware Gallery
+
+* Unsafe images are **blurred by default**
+* Content warning overlay with a **“View Anyway”** toggle
+* Ensures user consent before displaying sensitive content
+
+### 📊 User Dashboard & Profile
+
+* Simple upload flow with **instant moderation feedback**
+* Personal gallery of all scanned images
+* Profile statistics:
+
+  * Total images scanned
+  * Safe vs flagged counts
+
+### 🔐 Secure Authentication
+
+* JWT-based authentication using **SimpleJWT**
+* Register, login, refresh tokens
+* All image and profile endpoints are protected
+
+---
+
+## 🧠 Tech Stack
+
+**Frontend**
+
+* React (Vite)
+* React Router
+* Axios
+
+**Backend**
+
+* Django
+* Django REST Framework
+* SimpleJWT
+
+**AI Moderation**
+
+* Sightengine Image Moderation API
+
+**Database**
+
+* SQLite (development/demo)
+* Easily swappable with PostgreSQL for production
+
+**Styling**
+
+* Custom CSS
+* Glassmorphism-inspired white/blue futuristic theme
+
+---
+
+## 🏗️ Architecture Overview
+
+1. User authenticates using JWT.
+2. Authenticated user uploads an image.
+3. Django backend stores the image and sends it to Sightengine’s `/check.json` endpoint.
+4. Sightengine response is parsed into:
+
+   * `is_safe` (boolean)
+   * `confidence_score`
+   * `ai_tags`
+5. Gallery and profile pages fetch data via API and render a **privacy-first UI**.
+
+---
+
+## 📁 Project Structure
+
+```
 AI-image-Guardian/
-backend/
-core/
-api/ # Django app: models, serializers, views, Sightengine integration
-core/ # Django project: settings, URLs
-manage.py
-requirements.txt
-frontend/
-src/
-pages/ # Login, Register, Dashboard (Upload), Gallery, Profile
-components/ # Navbar, ImageCard, ProtectedRoute
-context/ # AuthContext (JWT handling)
-api.js # Axios client
-vite.config.js # Dev proxy for /api and /media
+│
+├── backend/
+│   ├── core/                 # Django project (settings, URLs)
+│   ├── api/                  # App: models, serializers, views, AI integration
+│   ├── manage.py
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── pages/            # Login, Register, Dashboard, Gallery, Profile
+│   │   ├── components/       # Navbar, ImageCard, ProtectedRoute
+│   │   ├── context/          # AuthContext (JWT handling)
+│   │   └── api.js            # Axios client
+│   └── vite.config.js        # Dev proxy for /api and /media
+│
+└── README.md
+```
 
+---
 
-## Getting Started (Local)
+## 🚀 Getting Started (Local Setup)
 
-### 1. Backend (Django)
+### 1️⃣ Backend (Django)
+
+```bash
 cd backend/core
 python -m venv venv
+```
 
-Windows PowerShell
+**Activate virtual environment**
+
+* Windows (PowerShell):
+
+```bash
 .\venv\Scripts\Activate.ps1
+```
+
+* macOS / Linux:
+
+```bash
+source venv/bin/activate
+```
+
+**Install dependencies & migrate**
+
+```bash
 pip install -r requirements.txt
 python manage.py migrate
+```
 
-Create a `.env` (or set env vars) with:
+**Create `.env` file**
+
+```env
 DJANGO_SECRET_KEY=your_dev_secret
 SIGHTENGINE_API_USER=your_user_id
 SIGHTENGINE_API_SECRET=your_secret
+```
 
-Run the server:
+**Run server**
+
+```bash
 python manage.py runserver 8001
+```
 
-API base: `http://127.0.0.1:8001/api/`
+**API Base URL**
 
-### 2. Frontend (React)
+```
+http://127.0.0.1:8001/api/
+```
+
+---
+
+### 2️⃣ Frontend (React)
+
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
-Vite dev server: `http://localhost:5173`
+**Vite Dev Server**
 
-During development, `/api` and `/media` are proxied to `http://127.0.0.1:8001`.
+```
+http://localhost:5173
+```
 
-### 3. Auth Flows (API)
+During development:
 
-- `POST /api/register/` → `{ username, email, password }`
-- `POST /api/login/` → SimpleJWT `access` + `refresh`
-- All image endpoints require `Authorization: Bearer <access>`.
+* `/api` and `/media` are proxied to `http://127.0.0.1:8001`
 
-### 4. Image Flows (API)
+---
 
-- `POST /api/upload/` – multipart form, field `image`
-- `GET /api/gallery/` – list of current user images
-- `GET /api/stats/` – `{ total_uploads, safe_images, flagged_images }`
+## 🔑 API Endpoints
 
-## Deployment
+### Authentication
 
-See `docs/deployment.md` (or the “Step‑by‑step deployment” section in this README) for instructions using:
-- Render (Django API)
-- Netlify/Vercel (React SPA)
+```http
+POST /api/register/   → { username, email, password }
+POST /api/login/      → JWT access + refresh tokens
+```
 
-## Future Improvements
+All protected routes require:
 
-- Role‑based access (moderators vs regular users).
-- Support for multiple AI providers (fallbacks if Sightengine is down).
-- Email notifications when unsafe content is flagged.
-- Admin dashboard for global moderation analytics.
+```
+Authorization: Bearer <access_token>
+```
 
-## License
+### Image Operations
 
-MIT (or your preferred license).
+```http
+POST /api/upload/     → Upload image (multipart/form-data)
+GET  /api/gallery/    → User’s image list
+GET  /api/stats/      → { total_uploads, safe_images, flagged_images }
+```
+
+---
+
+## 🌍 Deployment
+
+Deployment guides are available in `docs/deployment.md` and include:
+
+* **Backend**: Render (Django REST API)
+* **Frontend**: Netlify / Vercel (React SPA)
+
+---
+
+## 🔮 Future Improvements
+
+* Role-based access (moderators vs regular users)
+* Multiple AI providers with fallback support
+* Email alerts for flagged content
+* Admin dashboard for global moderation analytics
+* Cloud storage (S3 / Cloudinary)
+
+---
+
+## 📜 License
+
+MIT License
+(You are free to modify or replace this with your preferred license.)
