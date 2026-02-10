@@ -1,144 +1,106 @@
-# AI Image Guardian – Software Requirements Specification (SRS)
+# AI Image Guardian
 
-## 1. Introduction
+Full‑stack AI-powered image guardian that scans user uploads for unsafe content (nudity, violence, weapons, etc.), automatically flags risky images, and shields viewers with a blur + warning UI.
 
-### 1.1 Purpose
+## Features
 
-This SRS describes the functional and non‑functional requirements for **AI Image Guardian**, a web application that automatically analyzes user‑uploaded images for unsafe content and presents them through a privacy‑respecting interface.
+- **AI moderation pipeline** – images are uploaded, analyzed by Sightengine, and stored with safety verdict and tags.
+- **Privacy‑aware gallery** – unsafe images are blurred by default with a content warning overlay and “view anyway” toggle.
+- **User dashboard** – simple upload flow with instant feedback and a personal gallery of all scanned images.
+- **Profile & stats** – per‑user summary of total photos scanned, safe vs flagged counts.
+- **JWT authentication** – register, login, and protect all image endpoints behind auth.
 
-### 1.2 Scope
+## Tech Stack
 
-The system enables registered users to:
+- **Frontend**: React (Vite), React Router, Axios
+- **Backend**: Django, Django REST Framework, SimpleJWT
+- **AI Moderation**: Sightengine Image Moderation API
+- **Database**: SQLite (dev/demo), easily swappable for Postgres
+- **Styling**: Custom CSS (glassmorphism, white/blue futuristic theme)
 
-- Upload images for automated safety analysis.
-- View a personal gallery of scanned images.
-- See which images are safe vs flagged, and why.
-- View aggregated statistics about their own uploads.
+## Architecture Overview
 
-The system is not intended to be a legal content moderation tool and does not replace human review for critical scenarios.
+1. User authenticates via JWT.
+2. Authenticated user uploads an image from the dashboard.
+3. Django saves the file, then calls Sightengine’s `/check.json` endpoint.
+4. Response is interpreted into:
+   - `is_safe` (bool)
+   - `confidence_score` (max unsafe score)
+   - `ai_tags` (reasons like “Nudity (explicit 84%)” or “Weapon”).
+5. Gallery and profile pages read from the API and render a privacy‑first UI.
 
-### 1.3 Definitions, Acronyms
+## Project Structure
+AI-image-Guardian/
+backend/
+core/
+api/ # Django app: models, serializers, views, Sightengine integration
+core/ # Django project: settings, URLs
+manage.py
+requirements.txt
+frontend/
+src/
+pages/ # Login, Register, Dashboard (Upload), Gallery, Profile
+components/ # Navbar, ImageCard, ProtectedRoute
+context/ # AuthContext (JWT handling)
+api.js # Axios client
+vite.config.js # Dev proxy for /api and /media
 
-- **AI Moderation Provider**: Third‑party service (Sightengine) that classifies content.
-- **Safe Image**: Image that is not flagged as unsafe by the moderation provider.
-- **Flagged Image / Unsafe Image**: Image for which the provider indicates a high probability of nudity, violence, weapons, etc.
 
-## 2. Overall Description
+## Getting Started (Local)
 
-### 2.1 Product Perspective
+### 1. Backend (Django)
+cd backend/core
+python -m venv venv
 
-AI Image Guardian is a standalone web application with:
+Windows PowerShell
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python manage.py migrate
 
-- React SPA frontend (browser).
-- REST API backend (Django + DRF).
-- External AI moderation provider (Sightengine).
+Create a `.env` (or set env vars) with:
+DJANGO_SECRET_KEY=your_dev_secret
+SIGHTENGINE_API_USER=your_user_id
+SIGHTENGINE_API_SECRET=your_secret
 
-### 2.2 User Classes
+Run the server:
+python manage.py runserver 8001
 
-- **Regular User**: Can register, login, upload images, view their gallery and stats.
-- **Administrator** (future): Manages the system via Django admin, may inspect all images.
+API base: `http://127.0.0.1:8001/api/`
 
-### 2.3 Assumptions and Dependencies
+### 2. Frontend (React)
+cd frontend
+npm install
+npm run dev
 
-- Stable internet access between backend and Sightengine API.
-- Sightengine API keys are correctly configured.
-- Users will not rely solely on the system for legal or compliance decisions.
+Vite dev server: `http://localhost:5173`
 
-## 3. Functional Requirements
+During development, `/api` and `/media` are proxied to `http://127.0.0.1:8001`.
 
-### FR‑1: User Registration
+### 3. Auth Flows (API)
 
-- The system shall allow new users to register with `username`, `email`, and `password`.
-- The system shall validate that usernames are unique.
+- `POST /api/register/` → `{ username, email, password }`
+- `POST /api/login/` → SimpleJWT `access` + `refresh`
+- All image endpoints require `Authorization: Bearer <access>`.
 
-### FR‑2: User Authentication
+### 4. Image Flows (API)
 
-- The system shall allow users to log in with username and password.
-- The system shall issue JWT access and refresh tokens on successful login.
-- The system shall require a valid access token to call image endpoints.
+- `POST /api/upload/` – multipart form, field `image`
+- `GET /api/gallery/` – list of current user images
+- `GET /api/stats/` – `{ total_uploads, safe_images, flagged_images }`
 
-### FR‑3: Image Upload
+## Deployment
 
-- The system shall allow authenticated users to upload an image file via a web form.
-- The system shall persist the uploaded file to server storage.
-- The system shall associate each image with the uploading user and timestamp.
+See `docs/deployment.md` (or the “Step‑by‑step deployment” section in this README) for instructions using:
+- Render (Django API)
+- Netlify/Vercel (React SPA)
 
-### FR‑4: AI Moderation
+## Future Improvements
 
-- After storing the image, the backend shall call the Sightengine API with the image.
-- The system shall interpret the API response into:
-  - `is_safe` (boolean),
-  - `confidence_score` (float),
-  - `ai_tags` (string reasons).
-- If the AI provider is unavailable or returns an error, the system shall:
-  - mark `is_safe = false` (conservative default),
-  - set `ai_tags` to an appropriate error tag (e.g. "API Error").
+- Role‑based access (moderators vs regular users).
+- Support for multiple AI providers (fallbacks if Sightengine is down).
+- Email notifications when unsafe content is flagged.
+- Admin dashboard for global moderation analytics.
 
-### FR‑5: Gallery View
+## License
 
-- The system shall provide an endpoint to list images for the authenticated user.
-- The React frontend shall display images in a card grid with:
-  - thumbnail (blurred if unsafe),
-  - upload date,
-  - status badge (safe/unsafe),
-  - confidence and tags.
-
-### FR‑6: Privacy‑Aware Display
-
-- The frontend shall blur unsafe images by default.
-- The frontend shall show a warning overlay and allow the user to intentionally reveal the image.
-
-### FR‑7: User Statistics
-
-- The backend shall compute, per user:
-  - total number of uploaded images,
-  - count of safe images,
-  - count of flagged images.
-- The profile page shall display these statistics in a simple dashboard.
-
-### FR‑8: Error Handling
-
-- The system shall display clear, user‑friendly errors for:
-  - failed login/registration,
-  - failed upload,
-  - failed AI moderation.
-- Technical details shall be logged server‑side, not disclosed to end users.
-
-## 4. Non‑Functional Requirements
-
-### NFR‑1: Security
-
-- All authenticated endpoints shall require a valid JWT access token.
-- Passwords shall be stored hashed using Django’s built‑in password hashing.
-
-### NFR‑2: Performance
-
-- The system should process an upload + AI moderation in under 5 seconds under normal conditions.
-- The UI should remain responsive while moderation is in progress (e.g. via loading states).
-
-### NFR‑3: Usability
-
-- The UI shall be responsive and usable on common desktop and mobile viewport sizes.
-- Unsafe images shall never be shown by default; users must opt in to view them.
-
-### NFR‑4: Reliability
-
-- In case of AI service failure, uploads should still succeed, and images should be conservatively marked as unsafe.
-
-### NFR‑5: Maintainability
-
-- The system shall separate concerns into layers:
-  - Django models/serializers/views for backend,
-  - React components/pages/context for frontend.
-- Configuration (keys, URLs) shall be stored in environment variables.
-
-## 5. External Interface Requirements
-
-- **REST API**: JSON over HTTPS, standard HTTP status codes.
-- **Third‑party API**: Sightengine `/1.0/check.json` endpoint for image moderation.
-
-## 6. Future Enhancements
-
-- Role‑based moderation queue for human reviewers.
-- Exportable reports for users (CSV of moderation history).
-- Multi‑language UI support.
+MIT (or your preferred license).
