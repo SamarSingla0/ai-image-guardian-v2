@@ -1,0 +1,91 @@
+.card {
+  background: var(--white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+  position: relative;
+  max-width: 260px;        /* slightly smaller cards */
+  margin: 0 auto;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.image-container {
+  height: 180px;           /* reduce image height */
+  overflow: hidden;
+  position: relative;
+  background-color: #eee;
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 0.3s ease;
+}
+
+/* The Blurring Class */
+.blurred {
+  filter: blur(20px);
+  transform: scale(1.1); /* Prevents white edges when blurring */
+}
+
+/* Overlay for Red Images */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  text-align: center;
+}
+
+.btn-reveal {
+  margin-top: 10px;
+  background-color: var(--danger-color);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.card-body {
+  padding: 15px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.badge.safe {
+  background-color: #dcfce7;
+  color: var(--success-color);
+}
+
+.badge.unsafe {
+  background-color: #fee2e2;
+  color: var(--danger-color);
+}
+
+.meta-info {
+  font-size: 0.85rem;
+  color: #666;
+}

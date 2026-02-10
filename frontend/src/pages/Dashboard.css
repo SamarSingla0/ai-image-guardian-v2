@@ -1,0 +1,30 @@
+.dashboard-card {
+  background: white;
+  padding: 3rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-width: 600px;
+  margin: 50px auto;
+  text-align: center;
+}
+
+.upload-area {
+  border: 2px dashed #cbd5e1;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 40px;
+  margin: 20px 0;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.upload-area:hover {
+  border-color: var(--primary-color);
+}
+
+.file-input {
+  display: none; /* hide native input; entire box is clickable */
+}

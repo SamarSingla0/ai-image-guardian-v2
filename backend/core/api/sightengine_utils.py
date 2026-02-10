@@ -3,9 +3,9 @@ import json
 import os
 
 # --- CONFIGURATION ---
-# REPLACE THESE WITH YOUR ACTUAL KEYS FROM SIGHTENGINE DASHBOARD
-API_USER = '1762404235'
-API_SECRET = 'ZoTfdFAy7rJSLSukCqXfohrmejWpjsig'
+# Prefer environment variables for secrets; fall back to placeholders.
+API_USER = os.getenv('SIGHTENGINE_API_USER', 'YOUR_SIGHTENGINE_USER_ID')
+API_SECRET = os.getenv('SIGHTENGINE_API_SECRET', 'YOUR_SIGHTENGINE_API_SECRET')
 
 def check_image_safety(image_path):
     """
@@ -25,7 +25,7 @@ def check_image_safety(image_path):
     params = {
         'models': 'nudity,wad,offensive,gore',
         'api_user': API_USER,
-        'api_secret': API_SECRET
+        'api_secret': API_SECRET,
     }
 
     # 3. Prepare the file
@@ -38,9 +38,10 @@ def check_image_safety(image_path):
         output = json.loads(response.text)
         
         # Check if API request was successful
-        if output['status'] != 'success':
+        if output.get('status') != 'success':
             print("Sightengine API Error:", output)
-            return True, 0.0, "API Error"
+            # Treat failures as unsafe so they don't appear as safe by mistake
+            return False, 0.0, "API Error"
 
         # 5. Analyze Results (The Logic)
         is_safe = True
@@ -48,34 +49,49 @@ def check_image_safety(image_path):
         max_unsafe_score = 0.0
 
         # --- Check Nudity ---
-        # output['nudity']['safe'] is a number 0 to 1. 
-        # If safe < 0.15, it is very likely nude.
-        if output['nudity']['safe'] < 0.50:
+        # Sightengine's nudity model exposes several probabilities such as:
+        #   nudity.raw (explicit), nudity.partial (lingerie, swimsuits), nudity.safe.
+        nudity = output.get('nudity', {}) or {}
+        raw_score = nudity.get('raw', 0.0)
+        partial_score = nudity.get('partial', 0.0)
+        safe_score = nudity.get('safe', 1.0)
+
+        # Mark as unsafe when explicit or strong partial nudity is present,
+        # or when the "safe" score is very low.
+        if raw_score > 0.20:
             is_safe = False
-            score = 1.0 - output['nudity']['safe'] # Convert safe score to unsafe score
-            unsafe_reasons.append(f"Nudity ({int(score*100)}%)")
+            unsafe_reasons.append(f"Nudity (explicit {int(raw_score * 100)}%)")
+            max_unsafe_score = max(max_unsafe_score, raw_score)
+        elif partial_score > 0.35:
+            is_safe = False
+            unsafe_reasons.append(f"Nudity (partial {int(partial_score * 100)}%)")
+            max_unsafe_score = max(max_unsafe_score, partial_score)
+        elif safe_score < 0.40:
+            is_safe = False
+            score = 1.0 - safe_score
+            unsafe_reasons.append(f"Nudity ({int(score * 100)}%)")
             max_unsafe_score = max(max_unsafe_score, score)
 
         # --- Check Weapons ---
-        if output['weapon'] > 0.50:
+        if output.get('weapon', 0.0) > 0.50:
             is_safe = False
             unsafe_reasons.append("Weapon")
             max_unsafe_score = max(max_unsafe_score, output['weapon'])
 
         # --- Check Drugs ---
-        if output['drugs'] > 0.50:
+        if output.get('drugs', 0.0) > 0.50:
             is_safe = False
             unsafe_reasons.append("Drugs")
             max_unsafe_score = max(max_unsafe_score, output['drugs'])
 
         # --- Check Gore ---
-        if output['gore']['prob'] > 0.50:
+        if output.get('gore', {}).get('prob', 0.0) > 0.40:
             is_safe = False
             unsafe_reasons.append("Gore")
             max_unsafe_score = max(max_unsafe_score, output['gore']['prob'])
 
         # --- Check Offensive ---
-        if output['offensive']['prob'] > 0.50:
+        if output.get('offensive', {}).get('prob', 0.0) > 0.50:
             is_safe = False
             unsafe_reasons.append("Offensive")
             max_unsafe_score = max(max_unsafe_score, output['offensive']['prob'])
@@ -89,5 +105,5 @@ def check_image_safety(image_path):
 
     except Exception as e:
         print(f"Error calling Sightengine: {e}")
-        # Default to safe if error, to prevent breaking the app
-        return True, 0.0, "System Error"
+        # On unexpected errors, mark as unsafe rather than safe.
+        return False, 0.0, "System Error"
